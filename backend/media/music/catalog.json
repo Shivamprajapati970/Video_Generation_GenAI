@@ -1,0 +1,80 @@
+[
+  {
+    "id": "happy_birthday_acoustic",
+    "title": "Happy Birthday Acoustic Motif",
+    "category": "birthday",
+    "description": "Joyful synthetic acoustic chords with bright harmonic bells for celebratory moments.",
+    "filename": "happy_birthday_acoustic.wav",
+    "source": "Synthetic Development Audio (VideoGen AI In-House Prototype Generator)",
+    "license": "Synthetic Development Track (Internal Test Use Only)",
+    "license_url": "",
+    "attribution": "VideoGen AI In-House Prototype Generator",
+    "commercial_use": false,
+    "restrictions": "Prototype development audio only; replace with verified licensed royalty-free track before commercial distribution."
+  },
+  {
+    "id": "romantic_piano_warmth",
+    "title": "Timeless Romance Piano Motif",
+    "category": "anniversary",
+    "description": "Tender and expressive synthetic piano progression with warm resonance.",
+    "filename": "romantic_piano_warmth.wav",
+    "source": "Synthetic Development Audio (VideoGen AI In-House Prototype Generator)",
+    "license": "Synthetic Development Track (Internal Test Use Only)",
+    "license_url": "",
+    "attribution": "VideoGen AI In-House Prototype Generator",
+    "commercial_use": false,
+    "restrictions": "Prototype development audio only; replace with verified licensed royalty-free track before commercial distribution."
+  },
+  {
+    "id": "nostalgic_acoustic_reflections",
+    "title": "Nostalgic Acoustic Reflections Motif",
+    "category": "memories",
+    "description": "Gentle synthetic fingerpicked acoustic chords evoking fond memories and nostalgia.",
+    "filename": "nostalgic_acoustic_reflections.wav",
+    "source": "Synthetic Development Audio (VideoGen AI In-House Prototype Generator)",
+    "license": "Synthetic Development Track (Internal Test Use Only)",
+    "license_url": "",
+    "attribution": "VideoGen AI In-House Prototype Generator",
+    "commercial_use": false,
+    "restrictions": "Prototype development audio only; replace with verified licensed royalty-free track before commercial distribution."
+  },
+  {
+    "id": "sunny_family_afternoon",
+    "title": "Sunny Family Afternoon Motif",
+    "category": "family",
+    "description": "Heartwarming and uplifting synthetic folk acoustic arrangement for family milestones.",
+    "filename": "sunny_family_afternoon.wav",
+    "source": "Synthetic Development Audio (VideoGen AI In-House Prototype Generator)",
+    "license": "Synthetic Development Track (Internal Test Use Only)",
+    "license_url": "",
+    "attribution": "VideoGen AI In-House Prototype Generator",
+    "commercial_use": false,
+    "restrictions": "Prototype development audio only; replace with verified licensed royalty-free track before commercial distribution."
+  },
+  {
+    "id": "majestic_orchestral_rise",
+    "title": "Majestic Orchestral Rise Motif",
+    "category": "cinematic",
+    "description": "Inspiring and sweeping synthetic cinematic progression with orchestral harmonic depth.",
+    "filename": "majestic_orchestral_rise.wav",
+    "source": "Synthetic Development Audio (VideoGen AI In-House Prototype Generator)",
+    "license": "Synthetic Development Track (Internal Test Use Only)",
+    "license_url": "",
+    "attribution": "VideoGen AI In-House Prototype Generator",
+    "commercial_use": false,
+    "restrictions": "Prototype development audio only; replace with verified licensed royalty-free track before commercial distribution."
+  },
+  {
+    "id": "carefree_friends_ukulele",
+    "title": "Carefree Friends Ukulele Motif",
+    "category": "friends",
+    "description": "Breezy and energetic synthetic acoustic rhythm capturing lighthearted friendship and roadtrips.",
+    "filename": "carefree_friends_ukulele.wav",
+    "source": "Synthetic Development Audio (VideoGen AI In-House Prototype Generator)",
+    "license": "Synthetic Development Track (Internal Test Use Only)",
+    "license_url": "",
+    "attribution": "VideoGen AI In-House Prototype Generator",
+    "commercial_use": false,
+    "restrictions": "Prototype development audio only; replace with verified licensed royalty-free track before commercial distribution."
+  }
+]

@@ -1,0 +1,69 @@
+{
+  "job_id": "0336c598-88d5-4cbc-82e8-18aa9eb7aa70",
+  "job_status": "COMPLETED",
+  "scenes": [
+    {
+      "asset_id": "df505fff-6b58-4ee2-a8fb-870f8464b0dd",
+      "scene_number": 1,
+      "scene_title": "The Announcement",
+      "file_path": "storage/outputs/clips/scene_1_1794899969.mp4",
+      "file_size_bytes": 296114,
+      "exists": true,
+      "decode_errors": "",
+      "stream_info": {
+        "duration": "Duration: 00:00:05.06, start: 0.000000, bitrate: 467 kb/s",
+        "video_stream": "Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 624x832 [SAR 1:1 DAR 3:4], 465 kb/s, 16 fps, 16 tbr, 16384 tbn (default)"
+      },
+      "timing_metrics": {
+        "scene_index": 1,
+        "total_seconds": 68.5,
+        "cooldown_seconds": 5.0,
+        "queue_wait_seconds": 2.1,
+        "gpu_processing_seconds": null,
+        "anonymous_fallback_used": true
+      }
+    },
+    {
+      "asset_id": "ceb6fe6e-b1da-4a12-9fba-f83d8b54abcc",
+      "scene_number": 2,
+      "scene_title": "The Partner",
+      "file_path": "storage/outputs/clips/scene_2_1794900043.mp4",
+      "file_size_bytes": 395664,
+      "exists": true,
+      "decode_errors": "",
+      "stream_info": {
+        "duration": "Duration: 00:00:05.06, start: 0.000000, bitrate: 625 kb/s",
+        "video_stream": "Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 832x592 [SAR 1:1 DAR 52:37], 622 kb/s, 16 fps, 16 tbr, 16384 tbn (default)"
+      },
+      "timing_metrics": {
+        "scene_index": 2,
+        "total_seconds": 74.0,
+        "cooldown_seconds": 5.0,
+        "queue_wait_seconds": 3.4,
+        "gpu_processing_seconds": null,
+        "anonymous_fallback_used": true
+      }
+    },
+    {
+      "asset_id": "26e30df9-c8e6-4a18-9e1e-6450aea69b9a",
+      "scene_number": 3,
+      "scene_title": "Milestone Chapter 3",
+      "file_path": "storage/outputs/clips/scene_3_1794900112.mp4",
+      "file_size_bytes": 422119,
+      "exists": true,
+      "decode_errors": "",
+      "stream_info": {
+        "duration": "Duration: 00:00:05.06, start: 0.000000, bitrate: 667 kb/s",
+        "video_stream": "Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 832x560 [SAR 1:1 DAR 52:35], 664 kb/s, 16 fps, 16 tbr, 16384 tbn (default)"
+      },
+      "timing_metrics": {
+        "scene_index": 3,
+        "total_seconds": 69.0,
+        "cooldown_seconds": 5.0,
+        "queue_wait_seconds": 1.8,
+        "gpu_processing_seconds": null,
+        "anonymous_fallback_used": true
+      }
+    }
+  ]
+}

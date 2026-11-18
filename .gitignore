@@ -218,3 +218,44 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node / Frontend
+node_modules/
+.next/
+out/
+next-env.d.ts
+
+# SQLite & Logs
+*.db
+*.sqlite3
+*.log
+
+# Storage
+storage/uploads/*
+storage/outputs/*
+!storage/uploads/.gitkeep
+!storage/outputs/.gitkeep
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Next.js / React
+node_modules/
+.next/
+out/
+dist/
+
+# Build and cache
+*.log
+.cache/
+coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
