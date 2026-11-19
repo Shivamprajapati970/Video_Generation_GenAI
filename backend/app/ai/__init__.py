@@ -6,6 +6,7 @@ from app.ai.base import (
 )
 from app.ai.groq_vision import GroqVisionProvider
 from app.ai.hf_wan_video import HFWanVideoProvider
+from app.ai.ffmpeg_slideshow import FFmpegSlideshowProvider
 from app.ai.hf_chatterbox import HFChatterboxProvider
 from app.ai.hf_acestep import HFAceStepProvider
 
@@ -16,6 +17,7 @@ __all__ = [
     "BaseMusicProvider",
     "GroqVisionProvider",
     "HFWanVideoProvider",
+    "FFmpegSlideshowProvider",
     "HFChatterboxProvider",
     "HFAceStepProvider",
 ]

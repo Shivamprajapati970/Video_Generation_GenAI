@@ -48,6 +48,10 @@ class ClipAssetResponse(BaseModel):
     file_size: int
     stream_url: str
     resolution: Optional[str] = None
+    provider: Optional[str] = "wan_video"
+    fallback_used: Optional[bool] = False
+    camera_movement: Optional[str] = None
+    original_error: Optional[str] = None
     created_at: datetime
 
 

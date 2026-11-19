@@ -678,11 +678,12 @@ async def generate_clips(
     project_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     scene_number: Optional[int] = Query(None, description="Optional scene number to generate/regenerate individually"),
+    force_slideshow: bool = Query(False, description="Generate clips using Animated Photo Slideshow fallback"),
     current_user: User = Depends(get_current_user),
     db: DBSession = Depends(get_db),
     generator: VideoGenerationService = Depends(get_video_generation_service),
 ):
-    """Initiates asynchronous generation of scene video clips using Wan 2.2.
+    """Initiates asynchronous generation of scene video clips using Wan 2.2 with automated FFmpeg slideshow fallback.
 
     Returns HTTP 202 Accepted with a GenerationJob tracker.
     Runs non-blocking in background to prevent connection drops.
@@ -703,7 +704,9 @@ async def generate_clips(
         external_provider_ids={
             "current_scene": scene_number,
             "completed_scenes": [],
+            "fallback_scenes": [],
             "failed_scenes": [],
+            "force_slideshow": force_slideshow,
             "total_scenes": total_scenes,
         },
     )
@@ -719,11 +722,12 @@ async def generate_clips(
         db_session_factory=SessionLocal,
         job_id=job.id,
         force_retry_scene=scene_number,
+        force_slideshow=force_slideshow,
     )
 
     logger.info(
         f"Queued clip generation job {job.id} for project {project.id} "
-        f"(scenes={total_scenes}, retry_scene={scene_number})"
+        f"(scenes={total_scenes}, retry_scene={scene_number}, force_slideshow={force_slideshow})"
     )
     return job
 
@@ -776,6 +780,10 @@ def get_project_clips(
                 file_size=asset.file_size or 0,
                 stream_url=f"/api/v1/assets/{asset.id}/stream",
                 resolution=meta.get("resolution"),
+                provider=meta.get("provider", "wan_video"),
+                fallback_used=bool(meta.get("fallback_used", False) or (meta.get("provider") == "ffmpeg_slideshow")),
+                camera_movement=meta.get("camera_movement"),
+                original_error=meta.get("original_wan_error"),
                 created_at=asset.created_at,
             )
         )

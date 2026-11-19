@@ -4,6 +4,7 @@ import logging
 import asyncio
 from datetime import datetime
 from typing import Optional, Dict, Any, List, Callable
+import httpx
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import select, and_, desc
 
@@ -16,6 +17,7 @@ from app.models.job import GenerationJob
 from app.models.asset import GeneratedAsset
 from app.ai.base import BaseVideoProvider
 from app.ai.hf_wan_video import HFWanVideoProvider
+from app.ai.ffmpeg_slideshow import FFmpegSlideshowProvider
 from app.services.storage.base import BaseStorageService
 from app.services.storage import get_storage_service
 
@@ -47,14 +49,20 @@ def _get_mp4_dimensions(file_path: str) -> Optional[str]:
 
 
 class VideoGenerationService:
-    """Orchestrates multi-scene video generation using Wan 2.2 and records asset lifecycle."""
+    """Orchestrates multi-scene video generation using Wan 2.2 and records asset lifecycle.
+    
+    Includes automated zero-wait FFmpeg Animated Photo Slideshow fallback (Phase 9)
+    when Hugging Face ZeroGPU inference fails, times out, or exhausts its quota.
+    """
 
     def __init__(
         self,
         video_provider: Optional[BaseVideoProvider] = None,
+        slideshow_provider: Optional[BaseVideoProvider] = None,
         storage_service: Optional[BaseStorageService] = None,
     ):
         self.video_provider = video_provider or HFWanVideoProvider()
+        self.slideshow_provider = slideshow_provider or FFmpegSlideshowProvider()
         self.storage_service = storage_service or get_storage_service()
 
     def get_existing_scene_assets(self, project_id: uuid.UUID, db: DBSession) -> Dict[int, GeneratedAsset]:
@@ -99,8 +107,14 @@ class VideoGenerationService:
         db_session_factory: Callable[[], DBSession] = SessionLocal,
         job_id: Optional[uuid.UUID] = None,
         force_retry_scene: Optional[int] = None,
+        force_slideshow: bool = False,
     ) -> GenerationJob:
-        """Asynchronously synthesizes video clips for all scenes in the project's ScenePlan."""
+        """Asynchronously synthesizes video clips for all scenes in the project's ScenePlan.
+        
+        Attempts Wan 2.2 AI generation first. If Wan 2.2 encounters recognized service/quota/timeout
+        errors or if scene is marked 'animated_still' (or force_slideshow=True), smoothly executes
+        the FFmpeg Animated Photo Slideshow fallback to guarantee project completion.
+        """
         db: DBSession = db_session_factory()
         job: Optional[GenerationJob] = None
 
@@ -149,6 +163,9 @@ class VideoGenerationService:
             }
 
             completed_scenes = []
+            fallback_scenes = []
+            providers_map = {}
+            wan_errors_map = {}
 
             # 4. Generate clips sequentially
             for scene_data in scenes:
@@ -156,12 +173,24 @@ class VideoGenerationService:
                 sc_title = scene_data.get("title", f"Scene {sc_num}")
                 duration = scene_data.get("duration_seconds", 5)
                 motion_prompt = scene_data.get("motion_prompt") or scene_data.get("visual_description", "")
+                camera_movement = scene_data.get("camera_movement", "")
+                gen_type = scene_data.get("generation_type", "wan_video")
                 ref_img_ids = scene_data.get("reference_image_ids", [])
 
                 # Check if this scene should be skipped
-                if sc_num in existing_assets and force_retry_scene != sc_num:
+                # Avoid redundant generation if asset already exists with matching provider mode
+                existing_provider = (existing_assets[sc_num].meta_data or {}).get("provider", "wan_video") if sc_num in existing_assets else None
+                should_skip = (
+                    sc_num in existing_assets
+                    and force_retry_scene != sc_num
+                    and not (force_slideshow and existing_provider != "ffmpeg_slideshow")
+                )
+                if should_skip:
                     logger.info(f"Scene {sc_num} already exists on disk as asset {existing_assets[sc_num].id}. Skipping.")
                     completed_scenes.append(sc_num)
+                    providers_map[str(sc_num)] = existing_provider
+                    if (existing_assets[sc_num].meta_data or {}).get("fallback_used"):
+                        fallback_scenes.append(sc_num)
                     continue
 
                 logger.info(f"Starting generation for Scene {sc_num}/{total_scenes}: '{sc_title}'")
@@ -226,20 +255,73 @@ class VideoGenerationService:
                     **(job.external_provider_ids or {}),
                     "current_scene": sc_num,
                     "completed_scenes": completed_scenes,
+                    "fallback_scenes": fallback_scenes,
+                    "providers": providers_map,
+                    "wan_errors": wan_errors_map,
                 }
                 db.commit()
 
-                # Synthesize clip with Wan 2.2
-                clip_path = await self.video_provider.generate_scene_clip(
-                    image_path=image_path,
-                    prompt=motion_prompt,
-                    aspect_ratio=project.aspect_ratio,
-                    duration_seconds=duration,
-                    scene_index=sc_num,
-                )
+                clip_path = None
+                provider_used = "wan_video"
+                fallback_used = False
+                original_wan_error = None
+                fallback_reason = None
+
+                # Fallback orchestration decision:
+                # 1. If explicitly forced to slideshow or planned as animated_still:
+                if force_slideshow or gen_type == "animated_still":
+                    logger.info(
+                        f"Scene {sc_num}: Generating directly via FFmpeg slideshow "
+                        f"(force_slideshow={force_slideshow}, gen_type={gen_type})"
+                    )
+                    clip_path = await self.slideshow_provider.generate_scene_clip(
+                        image_path=image_path,
+                        prompt=motion_prompt,
+                        aspect_ratio=project.aspect_ratio,
+                        duration_seconds=duration,
+                        scene_index=sc_num,
+                        camera_movement=camera_movement,
+                    )
+                    provider_used = "ffmpeg_slideshow"
+                    fallback_used = bool(force_slideshow)
+                else:
+                    # 2. Attempt Wan 2.2 generation first
+                    try:
+                        clip_path = await self.video_provider.generate_scene_clip(
+                            image_path=image_path,
+                            prompt=motion_prompt,
+                            aspect_ratio=project.aspect_ratio,
+                            duration_seconds=duration,
+                            scene_index=sc_num,
+                        )
+                        provider_used = "wan_video"
+                        fallback_used = False
+                    except (ServiceUnavailableError, httpx.TimeoutException, httpx.ConnectError, httpx.HTTPStatusError) as wan_err:
+                        # Recognized provider failure or quota exhaustion: trigger slideshow fallback
+                        original_wan_error = str(wan_err)
+                        fallback_reason = f"Wan 2.2 provider unavailable ({type(wan_err).__name__}). Falling back to FFmpeg slideshow."
+                        logger.warning(f"Scene {sc_num}: {fallback_reason} Detail: {wan_err}")
+
+                        clip_path = await self.slideshow_provider.generate_scene_clip(
+                            image_path=image_path,
+                            prompt=motion_prompt,
+                            aspect_ratio=project.aspect_ratio,
+                            duration_seconds=duration,
+                            scene_index=sc_num,
+                            camera_movement=camera_movement,
+                        )
+                        provider_used = "ffmpeg_slideshow"
+                        fallback_used = True
+                        fallback_scenes.append(sc_num)
+                        wan_errors_map[str(sc_num)] = original_wan_error
+                    except Exception as exc:
+                        # Non-provider errors (e.g. BadRequestError, schema errors) must NOT trigger fallback
+                        logger.error(f"Scene {sc_num}: Non-retryable error during clip generation: {exc}")
+                        raise
 
                 file_size = os.path.getsize(clip_path) if os.path.isfile(clip_path) else 0
                 resolution = _get_mp4_dimensions(clip_path)
+                providers_map[str(sc_num)] = provider_used
 
                 # Persist or update GeneratedAsset record
                 # Relative path for portable storage reference
@@ -257,6 +339,13 @@ class VideoGenerationService:
                     except Exception:
                         db.rollback()
 
+                raw_metrics = (
+                    getattr(self.slideshow_provider, "last_run_metrics", {})
+                    if provider_used == "ffmpeg_slideshow"
+                    else getattr(self.video_provider, "last_run_metrics", {})
+                )
+                metrics = raw_metrics.get(sc_num, {}) if isinstance(raw_metrics, dict) else {}
+
                 asset = GeneratedAsset(
                     id=uuid.uuid4(),
                     project_id=project.id,
@@ -270,10 +359,14 @@ class VideoGenerationService:
                         "motion_prompt": motion_prompt,
                         "resolution": resolution,
                         "reference_image_path": image_path,
-                        "camera_movement": scene_data.get("camera_movement", ""),
+                        "camera_movement": camera_movement,
                         "scene_objective": scene_data.get("scene_objective", ""),
                         "narration_text": scene_data.get("narration_text", ""),
-                        "timing_metrics": getattr(self.video_provider, "last_run_metrics", {}).get(sc_num, {}),
+                        "provider": provider_used,
+                        "fallback_used": fallback_used,
+                        "original_wan_error": original_wan_error,
+                        "fallback_reason": fallback_reason,
+                        "timing_metrics": metrics,
                     },
                 )
                 db.add(asset)
@@ -282,10 +375,13 @@ class VideoGenerationService:
 
                 completed_scenes.append(sc_num)
                 existing_assets[sc_num] = asset
-                logger.info(f"Successfully saved GeneratedAsset {asset.id} for Scene {sc_num} ({file_size} bytes, {resolution})")
+                logger.info(
+                    f"Successfully saved GeneratedAsset {asset.id} for Scene {sc_num} "
+                    f"({file_size} bytes, {resolution}, provider={provider_used}, fallback={fallback_used})"
+                )
 
-                # Respectful ZeroGPU lease cooldown between consecutive scenes
-                if sc_num < total_scenes and not self.video_provider.effective_mock_mode:
+                # Respectful ZeroGPU lease cooldown only between consecutive WAN scenes
+                if provider_used == "wan_video" and sc_num < total_scenes and not getattr(self.video_provider, "effective_mock_mode", False):
                     cooldown_s = 5.0
                     logger.info(f"ZeroGPU cooldown: waiting {cooldown_s}s before requesting scene {sc_num + 1}...")
                     await asyncio.sleep(cooldown_s)
@@ -297,6 +393,9 @@ class VideoGenerationService:
             job.external_provider_ids = {
                 **(job.external_provider_ids or {}),
                 "completed_scenes": completed_scenes,
+                "fallback_scenes": fallback_scenes,
+                "providers": providers_map,
+                "wan_errors": wan_errors_map,
                 "current_scene": None,
             }
             db.commit()

@@ -288,14 +288,14 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     return () => clearInterval(t);
   }, [countdownSeconds]);
 
-  const handleStartClipGeneration = async (sceneNumber?: number) => {
+  const handleStartClipGeneration = async (sceneNumber?: number, forceSlideshow?: boolean) => {
     try {
       setGeneratingClips(true);
       setGenerationError(null);
       if (sceneNumber) {
         setActiveSceneNumber(sceneNumber);
       }
-      await generateProjectClips(projectId, sceneNumber);
+      await generateProjectClips(projectId, sceneNumber, forceSlideshow);
       // Fetch status right away
       await fetchClipsAndJob();
     } catch (err: any) {
@@ -898,7 +898,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
                   <button
-                    onClick={() => handleStartClipGeneration()}
+                    onClick={() => handleStartClipGeneration(undefined, false)}
                     disabled={generatingClips || analyzing}
                     className={`px-5 py-2.5 rounded-xl font-semibold text-sm shadow-lg flex items-center justify-center gap-2 transition-all ${generatingClips
                       ? "bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700"
@@ -914,13 +914,22 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                       </>
                     ) : clips.length === project.scene_plan.scenes.length ? (
                       <>
-                        <span>✓</span> All Clips Generated (Regenerate All)
+                        <span>✓</span> All Clips Ready (Regenerate All)
                       </>
                     ) : (
                       <>
-                        <span>🎬</span> Generate Video Clips (Wan 2.2)
+                        <span>🎬</span> Generate Video Clips (Wan 2.2 + Auto Fallback)
                       </>
                     )}
+                  </button>
+
+                  <button
+                    onClick={() => handleStartClipGeneration(undefined, true)}
+                    disabled={generatingClips || analyzing}
+                    title="Instantly generate all scene clips using smooth Ken Burns photo motion (zero cloud queue)"
+                    className="px-4 py-2.5 rounded-xl font-semibold text-xs border border-amber-500/40 bg-amber-950/40 hover:bg-amber-900/40 text-amber-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span>⚡</span> Slideshow Mode (Instant)
                   </button>
                 </div>
               </div>
@@ -1570,12 +1579,18 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="text-sm font-bold text-white">{scene.title}</h4>
                           {sceneClip ? (
-                            <span className="px-2.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-mono font-semibold text-emerald-300 flex items-center gap-1">
-                              <span>✓</span> Wan 2.2 Generated
-                            </span>
+                            sceneClip.fallback_used || sceneClip.provider === "ffmpeg_slideshow" ? (
+                              <span className="px-2.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-[10px] font-mono font-semibold text-amber-300 flex items-center gap-1">
+                                <span>🖼️</span> Animated Slideshow (Fallback)
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-mono font-semibold text-emerald-300 flex items-center gap-1">
+                                <span>✓</span> Wan 2.2 AI Generated
+                              </span>
+                            )
                           ) : (
                             <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300">
-                              Wan 2.2 Ready
+                              Wan 2.2 / Slideshow Ready
                             </span>
                           )}
                         </div>
@@ -1618,24 +1633,55 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           </div>
                         </div>
 
-                        {/* Wan 2.2 Generated Video Clip Preview & Controls */}
+                        {/* Video Clip Preview & Controls */}
                         {sceneClip ? (
-                          <div className="mt-4 p-4 rounded-2xl bg-slate-900 border border-emerald-500/30 space-y-3">
+                          <div className={`mt-4 p-4 rounded-2xl bg-slate-900 border space-y-3 ${
+                            sceneClip.fallback_used || sceneClip.provider === "ffmpeg_slideshow"
+                              ? "border-amber-500/40"
+                              : "border-emerald-500/30"
+                          }`}>
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                                <span className="text-xs font-bold text-emerald-300">
-                                  Scene {scene.scene_number} Video Clip (Wan 2.2)
+                                <span className={`w-2 h-2 rounded-full animate-pulse ${
+                                  sceneClip.fallback_used || sceneClip.provider === "ffmpeg_slideshow"
+                                    ? "bg-amber-400"
+                                    : "bg-emerald-400"
+                                }`} />
+                                <span className={`text-xs font-bold ${
+                                  sceneClip.fallback_used || sceneClip.provider === "ffmpeg_slideshow"
+                                    ? "text-amber-300"
+                                    : "text-emerald-300"
+                                }`}>
+                                  Scene {scene.scene_number} Video Clip {
+                                    sceneClip.fallback_used || sceneClip.provider === "ffmpeg_slideshow"
+                                      ? "(Animated Slideshow Fallback)"
+                                      : "(Wan 2.2 AI)"
+                                  }
                                 </span>
                               </div>
                               <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
-                                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">{sceneClip.resolution || "640x832"}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">{sceneClip.resolution || "720x1280"}</span>
                                 <span>•</span>
                                 <span>{sceneClip.duration_seconds.toFixed(1)}s</span>
                                 <span>•</span>
                                 <span>{(sceneClip.file_size / 1024).toFixed(0)} KB</span>
                               </div>
                             </div>
+
+                            {/* Informational Banner for Fallback Scenes */}
+                            {(sceneClip.fallback_used || sceneClip.provider === "ffmpeg_slideshow") && (
+                              <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-xs text-amber-200/90 flex items-start gap-2.5">
+                                <span className="text-base leading-none">ℹ️</span>
+                                <div>
+                                  <div className="font-semibold text-amber-300 mb-0.5">
+                                    Animated Photo Slideshow Fallback Active
+                                  </div>
+                                  <div className="text-[11px] text-amber-200/80 leading-relaxed">
+                                    AI video generation was unavailable or timed out on Hugging Face ZeroGPU; this scene was smoothly animated using FFmpeg Ken Burns ({sceneClip.camera_movement || "subtle motion"}).
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
                             <div className="rounded-xl overflow-hidden bg-black flex justify-center border border-slate-800">
                               <video
@@ -1647,36 +1693,54 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                               />
                             </div>
 
-                            <div className="flex items-center justify-between pt-1 text-xs">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
                               <span className="text-[11px] text-slate-500">
                                 HTTP Range 206 stream • AVC1/H.264
                               </span>
-                              <button
-                                onClick={() => handleStartClipGeneration(scene.scene_number)}
-                                disabled={generatingClips}
-                                className="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <span>🔄</span> Regenerate Scene {scene.scene_number}
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleStartClipGeneration(scene.scene_number, false)}
+                                  disabled={generatingClips}
+                                  className="text-xs text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <span>🔄</span> Wan 2.2
+                                </button>
+                                <button
+                                  onClick={() => handleStartClipGeneration(scene.scene_number, true)}
+                                  disabled={generatingClips}
+                                  className="text-xs text-amber-300 hover:text-amber-100 px-2.5 py-1.5 rounded-lg bg-amber-950/50 hover:bg-amber-900/50 border border-amber-500/40 transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <span>⚡</span> Slideshow
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ) : generatingClips && (activeSceneNumber === scene.scene_number || (!activeSceneNumber && latestJob?.stage === "GENERATING_CLIPS")) ? (
                           <div className="mt-4 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 flex items-center justify-center gap-3 text-xs text-indigo-300">
                             <span className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                            <span>Synthesizing video motion with Wan 2.2 on ZeroGPU (~25s)...</span>
+                            <span>Synthesizing video motion (Wan 2.2 / Slideshow Fallback)...</span>
                           </div>
                         ) : (
-                          <div className="mt-4 p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/80 flex items-center justify-between">
+                          <div className="mt-4 p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
                             <span className="text-xs text-slate-400">
                               Clip not yet generated
                             </span>
-                            <button
-                              onClick={() => handleStartClipGeneration(scene.scene_number)}
-                              disabled={generatingClips}
-                              className="text-xs text-indigo-300 hover:text-white px-3.5 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <span>⚡</span> Generate Scene {scene.scene_number} Clip
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleStartClipGeneration(scene.scene_number, false)}
+                                disabled={generatingClips}
+                                className="text-xs text-indigo-300 hover:text-white px-3 py-1.5 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/40 transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <span>🎬</span> Wan 2.2
+                              </button>
+                              <button
+                                onClick={() => handleStartClipGeneration(scene.scene_number, true)}
+                                disabled={generatingClips}
+                                className="text-xs text-amber-300 hover:text-amber-100 px-3 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <span>⚡</span> Slideshow
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1759,7 +1823,11 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                     {hasAllClips ? `All ${planSceneCount} Scenes Ready` : `${clips.length} of ${planSceneCount} Scenes Ready`}
                   </div>
                   <p className="text-[10px] text-slate-500">
-                    {hasAllClips ? "Wan 2.2 clips generated" : "Generate missing clips above"}
+                    {hasAllClips
+                      ? clips.some((c) => c.fallback_used || c.provider === "ffmpeg_slideshow")
+                        ? "Clips ready (Wan 2.2 + Slideshow)"
+                        : "Wan 2.2 AI clips ready"
+                      : "Generate missing clips above"}
                   </p>
                 </div>
 

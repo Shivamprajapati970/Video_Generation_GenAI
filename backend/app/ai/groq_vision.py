@@ -200,16 +200,12 @@ class GroqVisionProvider(BaseVisionProvider):
 
     @staticmethod
     def get_scene_generation_type(scene_index: int, total_scenes: int) -> str:
-        """Determines whether a scene is generated via Wan 2.2 AI video or animated still (FFmpeg).
+        """Determines default generation type for scenes.
         
-        Alternates between wan_video and animated_still to respect free tier limitations
-        while keeping motion cinematic.
+        Defaults to 'wan_video' so all scenes attempt AI video generation by default.
+        If Wan 2.2 is unavailable or rate-limited, Phase 9 automatic slideshow fallback activates.
         """
-        if scene_index in (0, 2):
-            return "wan_video"
-        elif total_scenes >= 5 and scene_index == total_scenes - 1:
-            return "wan_video"
-        return "animated_still"
+        return "wan_video"
 
     @property
     def effective_mock_mode(self) -> bool:
@@ -642,8 +638,8 @@ class GroqVisionProvider(BaseVisionProvider):
                         ],
                         response_format={"type": "json_object"},
                         temperature=0.6,
-                        max_tokens=850,
-                        max_completion_tokens=850,
+                        max_tokens=2500,
+                        max_completion_tokens=2500,
                     )
                     if hasattr(response, "usage") and response.usage:
                         u = response.usage
@@ -698,15 +694,15 @@ class GroqVisionProvider(BaseVisionProvider):
                     elif len(raw_scenes) > num_scenes:
                         raw_scenes = raw_scenes[:num_scenes]
 
-                    # Enforce exact durations, sequential numbering, generation_type, and unique narration
+                    # Enforce exact durations, sequential numbering, 1:1 reference image mapping, generation_type, and unique narration
                     seen_narrations = set()
                     for idx, sc in enumerate(raw_scenes):
                         cfg = scene_configs[idx]
                         sc["scene_number"] = cfg["scene_number"]
                         sc["duration_seconds"] = cfg["duration_seconds"]
-                        sc["generation_type"] = sc.get("generation_type") or cfg["generation_type"]
-                        if not sc.get("reference_image_ids"):
-                            sc["reference_image_ids"] = [cfg["reference_image_id"]]
+                        sc["generation_type"] = cfg["generation_type"]
+                        # Enforce 1:1 reference image mapping: Scene i strictly uses uploaded Image i
+                        sc["reference_image_ids"] = [cfg["reference_image_id"]]
                         n_text = str(sc.get("narration_text", "")).strip()
                         if not n_text or n_text in seen_narrations:
                             n_text = f"Cherished milestone memories in scene {idx + 1} reflect the heartwarming spirit of this journey."
