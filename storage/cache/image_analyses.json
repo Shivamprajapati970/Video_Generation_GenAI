@@ -1,0 +1,42 @@
+{
+  "55955355-67e2-40c0-b530-3842a1fa351d": {
+    "image_id": "55955355-67e2-40c0-b530-3842a1fa351d",
+    "original_filename": "test_img1.jpg",
+    "order_index": 0,
+    "subjects": [
+      "Main subject in test_img1.jpg",
+      "Family and friends"
+    ],
+    "environment": "Warm decorated anniversary venue with elegant ambient background",
+    "details": [
+      "Festive decorations",
+      "Joyful natural smiles",
+      "Soft golden lighting accents"
+    ],
+    "activities": "Celebrating and sharing memorable anniversary moments",
+    "mood": "Joyful, intimate, and deeply celebratory anniversary atmosphere",
+    "lighting_composition": "Cinematic soft lighting, portrait depth of field, balanced thirds framing",
+    "cinematic_presentation": "Slow graceful push-in with gentle lens blur transition",
+    "story_role": "Key milestone snapshot representing chapter 1 of the anniversary story"
+  },
+  "2474e2dc-628f-4e51-905d-df67182cf10f": {
+    "image_id": "2474e2dc-628f-4e51-905d-df67182cf10f",
+    "original_filename": "test_img2.jpg",
+    "order_index": 1,
+    "subjects": [
+      "Main subject in test_img2.jpg",
+      "Family and friends"
+    ],
+    "environment": "Warm decorated anniversary venue with elegant ambient background",
+    "details": [
+      "Festive decorations",
+      "Joyful natural smiles",
+      "Soft golden lighting accents"
+    ],
+    "activities": "Celebrating and sharing memorable anniversary moments",
+    "mood": "Joyful, intimate, and deeply celebratory anniversary atmosphere",
+    "lighting_composition": "Cinematic soft lighting, portrait depth of field, balanced thirds framing",
+    "cinematic_presentation": "Slow graceful push-in with gentle lens blur transition",
+    "story_role": "Key milestone snapshot representing chapter 2 of the anniversary story"
+  }
+}

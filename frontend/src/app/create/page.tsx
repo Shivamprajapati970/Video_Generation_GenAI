@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createProject, uploadProjectImages, Project } from "@/lib/api";
+import { createProject, uploadProjectImages, Project, getMe } from "@/lib/api";
+import Header from "@/components/Header";
 
 const OCCASIONS = [
   { id: "Birthday", label: "Birthday", emoji: "🎂", desc: "Joyful highlights & birthday party vibes" },
@@ -54,6 +55,13 @@ export default function CreateProjectPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadStep, setUploadStep] = useState<string>("");
   const [createdProject, setCreatedProject] = useState<Project | null>(null);
+  const [isAuthError, setIsAuthError] = useState(false);
+
+  useEffect(() => {
+    getMe().catch(() => {
+      setIsAuthError(true);
+    });
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -215,26 +223,24 @@ export default function CreateProjectPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Navigation */}
-      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-base">
-              V
-            </div>
-            <span className="font-semibold text-base text-white">AI Video Studio</span>
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-xs font-medium text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700"
-          >
-            Dashboard
-          </Link>
-        </div>
-      </header>
+      <Header showBack backHref="/dashboard" backLabel="Dashboard" />
 
       {/* Main Wizard Form */}
       <main className="flex-1 max-w-4xl mx-auto px-6 py-10 w-full">
+        {isAuthError && (
+          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚠️</span>
+              <span>You are not signed in. Please sign in to create and save video projects.</span>
+            </div>
+            <Link
+              href="/login"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all shadow-md flex-shrink-0"
+            >
+              Sign In &rarr;
+            </Link>
+          </div>
+        )}
         <div className="mb-8">
           <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Step 1 & 2</span>
           <h1 className="text-3xl font-extrabold text-white mt-1">Create Video Project & Upload Photos</h1>

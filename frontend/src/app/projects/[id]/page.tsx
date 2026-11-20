@@ -34,6 +34,7 @@ import {
   AnalysisProgressResponse,
   ImageAnalysisCheckpoint,
 } from "@/lib/api";
+import Header from "@/components/Header";
 
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -496,27 +497,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-slate-400 hover:text-white text-xs px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700"
-            >
-              &larr; Dashboard
-            </Link>
-            <span className="text-slate-600">/</span>
-            <span className="font-semibold text-sm text-white truncate max-w-xs">{project.title}</span>
-          </div>
+      <Header
+        showBack
+        backHref="/dashboard"
+        backLabel="Dashboard"
+        projectTitle={project.title}
+        rightAction={
           <button
             onClick={handleDeleteProject}
-            className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition-colors"
+            className="text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded-lg border border-red-500/20 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
             Delete Project
           </button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl mx-auto px-6 py-10 w-full space-y-8">
@@ -543,6 +537,19 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.title}</h1>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1 font-mono">
+                <span>📅</span>
+                <span>
+                  Created{" "}
+                  {project.created_at
+                    ? new Date(project.created_at).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "Recently"}
+                </span>
+              </div>
               {project.description && (
                 <p className="text-slate-400 text-sm mt-2 max-w-2xl leading-relaxed">{project.description}</p>
               )}
